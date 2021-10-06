@@ -1,0 +1,102 @@
+<?php
+
+declare(strict_types=1);
+
+namespace OpenTelemetry\API\Baggage;
+
+use OpenTelemetry\Context\Context;
+use OpenTelemetry\Context\Scope;
+
+final class Baggage implements BaggageInterface
+{
+    private static ?self $emptyBaggage = null;
+
+    /** @inheritDoc */
+    public static function fromContext(Context $context): BaggageInterface
+    {
+        if ($baggage = $context->get(BaggageContextKey::instance())) {
+            return $baggage;
+        }
+
+        return self::getEmpty();
+    }
+
+    /** @inheritDoc */
+    public static function getBuilder(): BaggageBuilderInterface
+    {
+        return new BaggageBuilder();
+    }
+
+    /** @inheritDoc */
+    public static function getCurrent(): BaggageInterface
+    {
+        return self::fromContext(Context::getCurrent());
+    }
+
+    /** @inheritDoc */
+    public static function getEmpty(): BaggageInterface
+    {
+        if (null === self::$emptyBaggage) {
+            self::$emptyBaggage = new self();
+        }
+
+        return self::$emptyBaggage;
+    }
+
+    /** @var array<string, Entry> */
+    private $entries;
+
+    /** @param array<string, Entry> $entries */
+    public function __construct(array $entries = [])
+    {
+        $this->entries = $entries;
+    }
+
+    /** @inheritDoc */
+    public function activate(): Scope
+    {
+        return Context::getCurrent()->withContextValue($this)->activate();
+    }
+
+    /** @inheritDoc */
+    public function getEntry(string $key): ?Entry
+    {
+        return $this->entries[$key] ?? null;
+    }
+
+    /** @inheritDoc */
+    public function getValue(string $key)
+    {
+        if ($entry = $this->getEntry($key)) {
+            return $entry->getValue();
+        }
+
+        return null;
+    }
+
+    /** @inheritDoc */
+    public function getAll(): iterable
+    {
+        foreach ($this->entries as $key => $entry) {
+            yield $key => $entry;
+        }
+    }
+
+    /** @inheritDoc */
+    public function isEmpty(): bool
+    {
+        return empty($this->entries);
+    }
+
+    /** @inheritDoc */
+    public function toBuilder(): BaggageBuilderInterface
+    {
+        return new BaggageBuilder($this->entries);
+    }
+
+    /** @inheritDoc */
+    public function storeInContext(Context $context): Context
+    {
+        return $context->with(BaggageContextKey::instance(), $this);
+    }
+}
