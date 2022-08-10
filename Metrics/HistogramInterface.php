@@ -6,16 +6,16 @@ namespace OpenTelemetry\API\Metrics;
 
 use OpenTelemetry\Context\Context;
 
-interface CounterInterface
+interface HistogramInterface
 {
 
     /**
-     * @param float|int $amount non-negative amount to increment by
+     * @param float|int $amount non-negative amount to record
      * @param iterable<non-empty-string, string|bool|float|int|array|null> $attributes
      *        attributes of the data point
      * @param Context|false|null $context execution context
      *
-     * @see https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/api.md#add
+     * @see https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/api.md#record
      */
-    public function add($amount, iterable $attributes = [], $context = null): void;
+    public function record($amount, iterable $attributes = [], $context = null): void;
 }
